@@ -1,5 +1,6 @@
 {
-  "builder": "dockerfile",
-  "buildCommand": "pip install -r backend/requirements.txt",
-  "startCommand": "cd backend && gunicorn -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT main:app"
+  "build": {
+    "builder": "NIXPACKS"
+  }
 }
+
