@@ -13,10 +13,15 @@ app = FastAPI()
 # Allow your React app to talk to this backend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Allow all origins for deployment
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/")
+async def root():
+    return {"message": "PDF to PNG Converter API is running", "status": "healthy"}
 
 TEMP_DIR = "temp_files"
 os.makedirs(TEMP_DIR, exist_ok=True)
@@ -72,4 +77,6 @@ async def jpg_to_pdf(background_tasks: BackgroundTasks, files: list[UploadFile] 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    import os
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
