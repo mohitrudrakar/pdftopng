@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRightLeft, Sparkles, ShieldCheck, Zap, MoveDown, UploadCloud, FileText, Image as ImageIcon, Sun, Moon } from 'lucide-react';
 import MorphScene from './MorphScene'; // Ensure this contains FloatingNetwork
 
-const API_URL = "http://localhost:8000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 export default function App() {
   const [loading, setLoading] = useState(false);
