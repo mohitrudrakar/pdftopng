@@ -1,6 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 import fitz  # PyMuPDF
 import img2pdf
 import zipfile
@@ -26,15 +26,18 @@ async def root():
 TEMP_DIR = "temp_files"
 os.makedirs(TEMP_DIR, exist_ok=True)
 
-def cleanup(path: str):
-    if os.path.exists(path):
-        if os.path.isdir(path):
-            shutil.rmtree(path)
-        else:
-            os.remove(path)
+def get_file_and_cleanup(file_path: str, dir_path: str = None):
+    try:
+        with open(file_path, mode="rb") as f:
+            yield from f
+    finally:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        if dir_path and os.path.exists(dir_path):
+            shutil.rmtree(dir_path)
 
 @app.post("/pdf-to-jpg")
-async def pdf_to_jpg(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+async def pdf_to_jpg(file: UploadFile = File(...)):
     job_id = str(uuid.uuid4())
     job_dir = os.path.join(TEMP_DIR, job_id)
     os.makedirs(job_dir)
@@ -56,13 +59,19 @@ async def pdf_to_jpg(background_tasks: BackgroundTasks, file: UploadFile = File(
             zipf.write(img_path, img_name)
             
     doc.close()
-    background_tasks.add_task(cleanup, job_dir)
-    background_tasks.add_task(cleanup, zip_path)
     
-    return FileResponse(zip_path, media_type="application/zip", filename="converted_images.zip")
+    headers = {
+        "Content-Disposition": "attachment; filename=converted_images.zip",
+        "Content-Length": str(os.path.getsize(zip_path))
+    }
+    return StreamingResponse(
+        get_file_and_cleanup(zip_path, job_dir),
+        media_type="application/zip",
+        headers=headers
+    )
 
 @app.post("/jpg-to-pdf")
-async def jpg_to_pdf(background_tasks: BackgroundTasks, files: list[UploadFile] = File(...)):
+async def jpg_to_pdf(files: list[UploadFile] = File(...)):
     job_id = str(uuid.uuid4())
     pdf_path = os.path.join(TEMP_DIR, f"{job_id}.pdf")
     
@@ -72,8 +81,15 @@ async def jpg_to_pdf(background_tasks: BackgroundTasks, files: list[UploadFile] 
     with open(pdf_path, "wb") as f:
         f.write(img2pdf.convert(image_data))
         
-    background_tasks.add_task(cleanup, pdf_path)
-    return FileResponse(pdf_path, media_type="application/pdf", filename="merged_document.pdf")
+    headers = {
+        "Content-Disposition": "attachment; filename=merged_document.pdf",
+        "Content-Length": str(os.path.getsize(pdf_path))
+    }
+    return StreamingResponse(
+        get_file_and_cleanup(pdf_path),
+        media_type="application/pdf",
+        headers=headers
+    )
 
 if __name__ == "__main__":
     import uvicorn
