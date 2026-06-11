@@ -21,7 +21,7 @@ This guide will help you deploy your application to Render.
    - **Name**: `pdftopng-backend`
    - **Environment/Runtime**: `Python`
    - **Build Command**: `pip install -r requirements.txt`
-   - **Start Command**: `gunicorn -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT backend.main:app`
+   - **Start Command**: `gunicorn -w 1 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT backend.main:app`
    - **Instance Type**: Select **"Free"** (no credit card required)
    - **Branch**: `master`
 4. Click **"Create Web Service"**
